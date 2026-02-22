@@ -82,6 +82,12 @@ Edit `~/.kiso/skills/aider/config.toml` to set the provider, models, and mode. T
 | `auto_commits` | `true` | Whether aider commits changes automatically |
 | `commit_language` | `en` | Language for commit messages |
 
+## Development
+
+```sh
+uv run --group dev pytest tests/ -v
+```
+
 ## License
 
 MIT
