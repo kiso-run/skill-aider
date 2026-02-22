@@ -19,10 +19,7 @@ _PROVIDER_KEY_VARS = {
 }
 
 
-def main():
-    data = json.load(sys.stdin)
-    args = data["args"]
-
+def run(args: dict, context: dict) -> str:
     config = load_config()
     provider = config.get("provider", "openrouter")
     mode = args.get("mode", config.get("mode", "architect"))
@@ -42,40 +39,37 @@ def main():
     # Check aider binary exists
     aider_bin = str(Path(sys.executable).parent / "aider")
     if not Path(aider_bin).exists():
-        print("Aider failed: aider binary not found")
+        print("Aider failed: aider binary not found.")
         sys.exit(1)
 
-    # Build command
     cmd = build_command(args, config, mode)
-
-    # Build environment
     env = build_env(api_key, provider, config)
 
-    # Print header
+    # Build header
     files = parse_file_list(args.get("files", ""))
     read_only = parse_file_list(args.get("read_only_files", ""))
-    print(f"Mode: {mode}")
+    parts = [f"Mode: {mode}"]
     if files:
-        print(f"Files: {', '.join(files)}")
+        parts.append(f"Files: {', '.join(files)}")
     if read_only:
-        print(f"Read-only: {', '.join(read_only)}")
-    print()
+        parts.append(f"Read-only: {', '.join(read_only)}")
+    parts.append("")  # blank line after header
 
-    # Run aider
     result = run_aider(cmd, env)
-
-    # Print cleaned output
     output = strip_ansi(result.stdout)
     if output.strip():
-        print(output)
+        parts.append(output)
 
     if result.returncode != 0:
         print(f"aider exited with code {result.returncode}", file=sys.stderr)
         if result.stderr:
             print(result.stderr, file=sys.stderr)
         if not output.strip():
-            print("Aider failed: see stderr for details.")
+            parts.append("Aider failed: see stderr for details.")
+        print("\n".join(parts))
         sys.exit(1)
+
+    return "\n".join(parts)
 
 
 def load_config() -> dict:
@@ -211,4 +205,6 @@ def strip_ansi(text: str) -> str:
 
 
 if __name__ == "__main__":
-    main()
+    data = json.load(sys.stdin)
+    result = run(data["args"], data)
+    print(result)
